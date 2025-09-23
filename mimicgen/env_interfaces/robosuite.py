@@ -32,14 +32,14 @@ class RobosuiteInterface(MG_EnvInterface):
 
         # OSC control frame is a MuJoCo site - just retrieve its current pose
         return self.get_object_pose(
-            obj_name=self.env.robots[0].controller.eef_name, 
+            obj_name=self.env.robots[0].controller.eef_name,
             obj_type="site",
         )
 
     def target_pose_to_action(self, target_pose, relative=True):
         """
-        Takes a target pose for the end effector controller and returns an action 
-        (usually a normalized delta pose action) to try and achieve that target pose. 
+        Takes a target pose for the end effector controller and returns an action
+        (usually a normalized delta pose action) to try and achieve that target pose.
 
         Args:
             target_pose (np.array): 4x4 target eef pose
@@ -469,7 +469,112 @@ class MG_HammerCleanup(RobosuiteInterface):
 
         # final subtask is placing the hammer into the drawer and closing the drawer (motion relative to drawer) - but final subtask signal not needed
         return signals
+    def get_task_step(self):
+            """
+            Returns the current task step for HammerCleanup task:
+                0: Initial state
+                1: Drawer opened
+                2: Hammer grasped
+                # Note: Hammer placement is not modeled explicitly
+            """
+            if not hasattr(self, "current_task_step"):
+                self.current_task_step = 0
 
+            # Get drawer and end-effector positions
+            drawer_pos, _ = PoseUtils.unmake_pose(self.get_object_pose(obj_name="CabinetObject_drawer_link", obj_type="body"))
+            eef_pos, _ = PoseUtils.unmake_pose(self.get_robot_eef_pose())
+            eef_drawer_dist = np.linalg.norm(eef_pos - drawer_pos)
+
+            # Check subtask completion
+            open_done =  (self.env.sim.data.qpos[self.env.cabinet_qpos_addrs] < -0.05) and (eef_drawer_dist > 0.24)
+            grasp_done = self.env._check_grasp(
+                gripper=self.env.robots[0].gripper,
+                object_geoms=[g for g in self.env.sorting_object.contact_geoms]
+            )
+
+            # Progress task step sequentially
+            if self.current_task_step == 0 and open_done:
+                self.current_task_step = 1
+            elif self.current_task_step == 1 and grasp_done:
+                self.current_task_step = 2
+
+            return self.current_task_step
+
+class MG_TableCleanup(RobosuiteInterface):
+    """
+    Corresponds to robosuite HammerCleanup task and variants.
+    """
+    def get_object_poses(self):
+        """
+        Gets the pose of each object relevant to MimicGen data generation in the current scene.
+
+        Returns:
+            object_poses (dict): dictionary that maps object name (str) to object pose matrix (4x4 np.array)
+        """
+
+        # two relevant objects - hammer and drawer
+        return dict(
+            hammer=self.get_object_pose(obj_name=self.env.sorting_object.root_body, obj_type="body"),
+            drawer=self.get_object_pose(obj_name=self.env.cabinet_object.root_body, obj_type="body"),
+        )
+
+    def get_subtask_term_signals(self):
+        """
+        Gets a dictionary of binary flags for each subtask in a task. The flag is 1
+        when the subtask has been completed and 0 otherwise. MimicGen only uses this
+        when parsing source demonstrations at the start of data generation, and it only
+        uses the first 0 -> 1 transition in this signal to detect the end of a subtask.
+
+        Returns:
+            subtask_term_signals (dict): dictionary that maps subtask name to termination flag (0 or 1)
+        """
+        signals = dict()
+
+        # first subtask is opening the drawer (motion relative to drawer)
+        # check that drawer is open enough and end effector is far enough from drawer after opening it
+        drawer_pos, _ = PoseUtils.unmake_pose(self.get_object_pose(obj_name="CabinetObject_drawer_link", obj_type="body"))
+        eef_pos, _ = PoseUtils.unmake_pose(self.get_robot_eef_pose())
+        eef_drawer_dist = np.linalg.norm(eef_pos - drawer_pos)
+        signals["open"] = int(
+            (self.env.sim.data.qpos[self.env.cabinet_qpos_addrs] < -0.10) and (eef_drawer_dist > 0.24)
+        )
+
+        # second subtask is grasping the hammer (motion relative to hammer)
+        signals["grasp"] = int(self.env._check_grasp(
+            gripper=self.env.robots[0].gripper,
+            object_geoms=[g for g in self.env.sorting_object.contact_geoms]
+        ))
+
+        # final subtask is placing the hammer into the drawer and closing the drawer (motion relative to drawer) - but final subtask signal not needed
+        return signals
+    def get_task_step(self):
+            """
+            Returns the current task step for HammerCleanup task:
+                0: Initial state
+                1: Drawer opened
+                2: Hammer grasped
+                # Note: Hammer placement is not modeled explicitly
+            """
+            if not hasattr(self, "current_task_step"):
+                self.current_task_step = 0
+
+            # Get drawer and end-effector positions
+            drawer_pos, _ = PoseUtils.unmake_pose(self.get_object_pose(obj_name="CabinetObject_drawer_link", obj_type="body"))
+            eef_pos, _ = PoseUtils.unmake_pose(self.get_robot_eef_pose())
+            eef_drawer_dist = np.linalg.norm(eef_pos - drawer_pos)
+
+            # Check subtask completion
+            open_done =  (self.env.sim.data.qpos[self.env.cabinet_qpos_addrs] < -0.05) and (eef_drawer_dist > 0.24)
+            grasp_done = self.env._check_grasp(
+                gripper=self.env.robots[0].gripper,
+                object_geoms=[g for g in self.env.sorting_object.contact_geoms]
+            )
+
+            # Progress task step sequentially
+            if self.current_task_step == 0 and grasp_done:
+                self.current_task_step = 1
+
+            return self.current_task_step
 
 class MG_MugCleanup(RobosuiteInterface):
     """
@@ -518,6 +623,37 @@ class MG_MugCleanup(RobosuiteInterface):
 
         # final subtask is placing the mug into the drawer and closing the drawer (motion relative to drawer) - but final subtask signal not needed
         return signals
+
+    def get_task_step(self):
+        """
+        Returns the current task step for Cleanup task:
+            0: Initial state.
+            1: Drawer has been opened.
+            2: Mug has been grasped.
+            # The mug placement step is not modeled.
+        """
+        if not hasattr(self, "current_task_step"):
+            self.current_task_step = 0
+
+        # Get drawer and end-effector positions.
+        drawer_pos, _ = PoseUtils.unmake_pose(self.get_object_pose(obj_name="DrawerObject_drawer_link", obj_type="body"))
+        eef_pos, _ = PoseUtils.unmake_pose(self.get_robot_eef_pose())
+        eef_drawer_dist = np.linalg.norm(eef_pos - drawer_pos)
+
+        # Check whether each subtask is complete.
+        open_done = (self.env.sim.data.qpos[self.env.drawer_qpos_addr] < -0.10) and (eef_drawer_dist > 0.24)
+        grasp_done = self.env._check_grasp_tolerant(
+            gripper=self.env.robots[0].gripper,
+            object_geoms=[g for g in self.env.cleanup_object.contact_geoms]
+        )
+
+        # Advance task stages in order.
+        if self.current_task_step == 0 and open_done:
+            self.current_task_step = 1
+        elif self.current_task_step == 1 and grasp_done:
+            self.current_task_step = 2
+
+        return self.current_task_step
 
 
 class MG_NutAssembly(RobosuiteInterface):
@@ -662,7 +798,7 @@ class MG_Kitchen(RobosuiteInterface):
             subtask_term_signals (dict): dictionary that maps subtask name to termination flag (0 or 1)
         """
         signals = dict()
-        
+
         # first subtask is to flip the switch to turn stove on (motion relative to button)
         signals["stove_on"] = int(self.env.buttons_on[1])
 
@@ -694,10 +830,131 @@ class MG_Kitchen(RobosuiteInterface):
         dist_serving_pot = serving_region_pos - pot_pos
         pot_in_serving_region = np.abs(dist_serving_pot[0]) < 0.05 and np.abs(dist_serving_pot[1]) < 0.10 and np.abs(dist_serving_pot[2]) < 0.05
         signals["serve"] = int(pot_in_serving_region)
+        # final subtask is to turn off the stove (motion relative to button) - but final subtask signal not needed
+        return signals
+
+    def get_task_step(self):
+        # Initialize the task order with 6 subtasks.
+        # 0: Initialize
+        # 1: stove_on
+        # 2: grasp_pot
+        # 3: place_pot_on_stove
+        # 4: grasp_bread
+        # 5: place_bread_in_pot
+        # 6: serve
+
+        if not hasattr(self, "current_task_step"):
+            self.current_task_step = 0
+
+        # Get the signals needed for task state tracking.
+        stove_on = int(self.env.buttons_on[1])
+        grasped_pot = self.env._check_grasp(
+            gripper=self.env.robots[0].gripper,
+            object_geoms=[g for g in self.env.pot_object.contact_geoms]
+        )
+        pot_on_stove = self.env.check_contact("PotObject_body_0", "Stove1_collision_burner") and not grasped_pot
+        grasped_bread = self.env._check_grasp(
+            gripper=self.env.robots[0].gripper,
+            object_geoms=[g for g in self.env.bread_ingredient.contact_geoms]
+        )
+        bread_in_pot = self.env.check_contact(self.env.bread_ingredient, self.env.pot_object) and grasped_pot
+
+        pot_pos = self.env.sim.data.body_xpos[self.env.pot_object_id]
+        serving_pos = self.env.sim.data.body_xpos[self.env.serving_region_id]
+        pot_in_serving_region = (
+            np.abs(serving_pos[0] - pot_pos[0]) < 0.05 and
+            np.abs(serving_pos[1] - pot_pos[1]) < 0.10 and
+            np.abs(serving_pos[2] - pot_pos[2]) < 0.05
+        )
+
+        # Advance stages in order to prevent task step regression.
+        if self.current_task_step == 0 and stove_on:
+            self.current_task_step = 1
+        elif self.current_task_step == 1 and grasped_pot:
+            self.current_task_step = 2
+        elif self.current_task_step == 2 and pot_on_stove:
+            self.current_task_step = 3
+        elif self.current_task_step == 3 and grasped_bread:
+            self.current_task_step = 4
+        elif self.current_task_step == 4 and bread_in_pot:
+            self.current_task_step = 5
+        elif self.current_task_step == 5 and pot_in_serving_region:
+            self.current_task_step = 6
+        elif self.current_task_step == 6 and not stove_on:
+            self.current_task_step = 0
+
+        return self.current_task_step
+
+class MG_KitchenCleanup(RobosuiteInterface):
+    """
+    Corresponds to robosuite Kitchen task and variants.
+    """
+    def get_object_poses(self):
+        """
+        Gets the pose of each object relevant to MimicGen data generation in the current scene.
+
+        Returns:
+            object_poses (dict): dictionary that maps object name (str) to object pose matrix (4x4 np.array)
+        """
+
+        # five relevant objects - bread, pot, stove, button, and serving region
+        return dict(
+            bread=self.get_object_pose(obj_name=self.env.bread_ingredient.root_body, obj_type="body"),
+            pot=self.get_object_pose(obj_name=self.env.pot_object.root_body, obj_type="body"),
+        )
+
+    def get_subtask_term_signals(self):
+        """
+        Gets a dictionary of binary flags for each subtask in a task. The flag is 1
+        when the subtask has been completed and 0 otherwise. MimicGen only uses this
+        when parsing source demonstrations at the start of data generation, and it only
+        uses the first 0 -> 1 transition in this signal to detect the end of a subtask.
+
+        Returns:
+            subtask_term_signals (dict): dictionary that maps subtask name to termination flag (0 or 1)
+        """
+        signals = dict()
+
+        # first subtask is to grasp bread (motion relative to bread)
+        signals["grasp_bread"] = int(self.env._check_grasp(
+            gripper=self.env.robots[0].gripper,
+            object_geoms=[g for g in self.env.bread_ingredient.contact_geoms]
+        ))
+
+        # finnal subtask is to place bread in pot and grasp pot (motion relative to pot)
+        signals["place_bread_in_pot"] = int(self.env.check_contact(self.env.bread_ingredient, self.env.pot_object))
 
         # final subtask is to turn off the stove (motion relative to button) - but final subtask signal not needed
         return signals
 
+    def get_task_step(self):
+        # Initialize the task order with 6 subtasks.
+        # 0: Initialize
+        # 1: stove_on
+        # 2: grasp_pot
+        # 3: place_pot_on_stove
+        # 4: grasp_bread
+        # 5: place_bread_in_pot
+        # 6: serve
+
+        if not hasattr(self, "current_task_step"):
+            self.current_task_step = 0
+
+        # Get the signals needed for task state tracking.
+        grasped_bread = self.env._check_grasp(
+            gripper=self.env.robots[0].gripper,
+            object_geoms=[g for g in self.env.bread_ingredient.contact_geoms]
+        )
+        bread_in_pot = self.env.check_contact(self.env.bread_ingredient, self.env.pot_object)
+
+
+        # Advance stages in order to prevent task step regression.
+        if self.current_task_step == 0 and grasped_bread:
+            self.current_task_step = 1
+        elif self.current_task_step == 1 and bread_in_pot:
+            self.current_task_step = 2
+
+        return self.current_task_step
 
 class MG_CoffeePreparation(RobosuiteInterface):
     """
@@ -747,3 +1004,43 @@ class MG_CoffeePreparation(RobosuiteInterface):
 
         # final subtask is inserting pod into machine and closing the lid (motion relative to machine) - but final subtask signal is not needed
         return signals
+
+    def get_task_step(self):
+        # Initialize the task order with 5 steps.
+        # 0: Initialize
+        # 1: mug_grasp
+        # 2: mug_place and lid open
+        # 3: drawer_open
+        # 4: pod_grasp
+
+        if not hasattr(self, "current_task_step"):
+            self.current_task_step = 0
+
+        metrics = self.env._get_partial_task_metrics()
+
+        # Step 1: Check whether the mug has been grasped.
+        mug_grasp = int(metrics["mug_grasp"])
+
+        # Step 2: Check whether the mug has been placed and the coffee machine lid is open.
+        mug_place = self.env._check_mug_placement()
+        lid_open = self.env.sim.data.qpos[self.env.hinge_qpos_addr] > 2.08
+        mug_placed_and_lid_open = mug_place and lid_open
+
+        # Step 3: Check whether the drawer is open.
+        drawer_open = self.env.sim.data.qpos[self.env.cabinet_qpos_addr] < -0.19
+
+        # Step 4: Check whether the coffee pod has been grasped.
+        pod_grasp = int(metrics["grasp"])
+
+        # Advance stages in order to prevent regression.
+        if self.current_task_step == 0 and mug_grasp:
+            self.current_task_step = 1
+        elif self.current_task_step == 1 and mug_placed_and_lid_open:
+            self.current_task_step = 2
+        elif self.current_task_step == 2 and drawer_open:
+            self.current_task_step = 3
+        elif self.current_task_step == 3 and pod_grasp:
+            self.current_task_step = 4
+        # Add another stage here if pod insertion and lid closing need to be modeled.
+
+        return self.current_task_step

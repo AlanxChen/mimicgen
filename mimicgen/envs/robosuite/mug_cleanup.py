@@ -3,8 +3,8 @@
 # Licensed under the NVIDIA Source Code License [see LICENSE for details].
 
 """
-Simpler object cleanup task (inspired by BUDS Hammer Place, see https://github.com/ARISE-Initiative/robosuite-task-zoo) 
-where a single object needs to be packed away into a drawer. The default task is to cleanup a 
+Simpler object cleanup task (inspired by BUDS Hammer Place, see https://github.com/ARISE-Initiative/robosuite-task-zoo)
+where a single object needs to be packed away into a drawer. The default task is to cleanup a
 particular mug.
 """
 import os
@@ -306,7 +306,7 @@ class MugCleanup(SingleArmEnv_MG):
         )
         # HACK: merge in mug afterwards because its number of geoms may change
         #       and this may break the generate_id_mappings function in task.py
-        self.model.merge_objects([self.cleanup_object]) # add cleanup object to model 
+        self.model.merge_objects([self.cleanup_object]) # add cleanup object to model
 
     def _get_drawer_model(self):
         """
@@ -638,7 +638,6 @@ class MugCleanup_D1(MugCleanup_D0):
             ),
         )
 
-
 class MugCleanup_O1(MugCleanup_D0):
     """
     Use different mug.
@@ -670,9 +669,9 @@ class MugCleanup_O2(MugCleanup_D0):
             ("d75af64a", 0.66666667),   # off-white cylindrical tapered mug
             ("5fe74bab", 0.8),          # brown mug, thin boundaries
             ("345d3e72", 0.66666667),   # black round mug
-            ("48e260a6", 0.66666667),   # red round mug 
-            ("8012f52d", 0.8),          # yellow round mug with bigger base 
-            ("b4ae56d6", 0.8),          # yellow cylindrical mug 
+            ("48e260a6", 0.66666667),   # red round mug
+            ("8012f52d", 0.8),          # yellow round mug with bigger base
+            ("b4ae56d6", 0.8),          # yellow cylindrical mug
             ("c2eacc52", 0.8),          # wooden cylindrical mug
             ("e94e46bc", 0.8),          # dark blue cylindrical mug
             ("fad118b3", 0.66666667),   # tall green cylindrical mug
@@ -698,3 +697,8 @@ class MugCleanup_O2(MugCleanup_D0):
             friction=(1, 1, 1),
             margin=0.001,
         )
+
+
+class Mug_Cleanup_T0(MugCleanup_D0):
+    """Paper-name alias for the current mug cleanup task variant."""
+    pass

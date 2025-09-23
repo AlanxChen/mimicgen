@@ -645,8 +645,8 @@ class ThreePieceAssembly(SingleArmEnv_MG):
 
     def _create_obj_centric_sensors(self, modality="object_centric"):
         """
-        Creates sensors for poses relative to certain objects. This is abstracted in a separate 
-        function call so that we don't have local function naming collisions during 
+        Creates sensors for poses relative to certain objects. This is abstracted in a separate
+        function call so that we don't have local function naming collisions during
         the _setup_observables() call.
 
         Args:

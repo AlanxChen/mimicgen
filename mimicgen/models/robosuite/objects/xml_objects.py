@@ -20,7 +20,7 @@ XML_ASSETS_BASE_PATH = os.path.join(mimicgen.__path__[0], "models/robosuite/asse
 
 class BlenderObject(MujocoXMLObject):
     """
-    Blender object with support for changing the scaling 
+    Blender object with support for changing the scaling
     """
     def __init__(
         self,
@@ -125,7 +125,7 @@ class BlenderObject(MujocoXMLObject):
 
             if (self.rgba is not None) and (element.get("group") == "1"):
                 element.set("rgba", array_to_string(self.rgba))
-        
+
         return geom_pairs
 
 
@@ -192,11 +192,38 @@ class DrawerObject(MujocoXMLObject):
     @property
     def top_offset(self):
         return np.array([0, 0, 0.065])
-        
+
     @property
     def horizontal_radius(self):
         return 0.15
 
+
+class DarkDrawerObject(MujocoXMLObject):
+    """
+    Custom version of cabinet object that differs from BUDs. It has manually specified top, bottom, and horizontal sites,
+    a slightly different material for the handle, and changed the group for the cabinet geoms from 1 to 0 because
+    robosuite v1.4 enforces that geom groups with 0 participate in physics and 1 do not.
+    """
+    def __init__(
+            self,
+            name,
+            joints=None):
+        path_to_cabinet_xml = os.path.join(XML_ASSETS_BASE_PATH, "objects/drawer_dark.xml")
+        super().__init__(path_to_cabinet_xml,
+                         name=name, joints=None, obj_type="all", duplicate_collision_geoms=True)
+
+    # NOTE: had to manually set these to get placement sampler working okay
+    @property
+    def bottom_offset(self):
+        return np.array([0, 0, -0.065])
+
+    @property
+    def top_offset(self):
+        return np.array([0, 0, 0.065])
+
+    @property
+    def horizontal_radius(self):
+        return 0.15
 
 class LongDrawerObject(MujocoXMLObject):
     """
@@ -219,7 +246,7 @@ class LongDrawerObject(MujocoXMLObject):
     @property
     def top_offset(self):
         return np.array([0, 0, 0.065])
-        
+
     @property
     def horizontal_radius(self):
         return 0.15

@@ -20,6 +20,8 @@ try:
     from mimicgen.envs.robosuite.stack import *
     from mimicgen.envs.robosuite.nut_assembly import *
     from mimicgen.envs.robosuite.pick_place import *
+    from mimicgen.envs.robosuite.kitchen_cleanup import *
+    from mimicgen.envs.robosuite.table_cleanup import *
 except ImportError as e:
     print("WARNING: robosuite environments not imported...")
     print("Got error: {}".format(e))
@@ -54,7 +56,7 @@ def register_dataset_link(dataset_type, task, link, horizon):
     rollout horizon that should be used during training.
 
     Args:
-        dataset_type (str): identifies the type of dataset (e.g. source human data, 
+        dataset_type (str): identifies the type of dataset (e.g. source human data,
             core experiment data, object transfer data)
         task (str): name of task for this dataset
         link (str): download link for the dataset

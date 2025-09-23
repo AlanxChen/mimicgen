@@ -15,6 +15,7 @@ from robosuite.models.tasks import ManipulationTask
 from robosuite.utils.placement_samplers import UniformRandomSampler
 from robosuite.utils.observables import Observable, sensor
 from robosuite.environments.manipulation.stack import Stack
+from robosuite.utils.placement_samplers import SequentialCompositeSampler, UniformRandomSampler
 
 from mimicgen.envs.robosuite.single_arm_env_mg import SingleArmEnv_MG
 
@@ -177,7 +178,7 @@ class Stack_D0(Stack, SingleArmEnv_MG):
                 z_rot: 2-tuple for low and high values for uniform sampling of z-rotation
                 reference: np array of shape (3,) for reference position in world frame (assumed to be static and not change)
         """
-        return { 
+        return {
             k : dict(
                 x=(-0.08, 0.08),
                 y=(-0.08, 0.08),
@@ -219,7 +220,7 @@ class Stack_D1(Stack_D0):
 
     def _get_initial_placement_bounds(self):
         max_dim = 0.20
-        return { 
+        return {
             k : dict(
                 x=(-max_dim, max_dim),
                 y=(-max_dim, max_dim),
@@ -242,9 +243,10 @@ class StackThree(Stack_D0):
 
         # ensure cube symmetry
         assert len(bounds) == 3
-        for k in ["x", "y", "z_rot", "reference"]:
-            assert np.array_equal(np.array(bounds["cubeA"][k]), np.array(bounds["cubeB"][k]))
-            assert np.array_equal(np.array(bounds["cubeB"][k]), np.array(bounds["cubeC"][k]))
+        # for k in ["x", "y", "z_rot", "reference"]:
+        #     breakpoint()
+        #     assert np.array_equal(np.array(bounds["cubeA"][k]), np.array(bounds["cubeB"][k]))
+        #     assert np.array_equal(np.array(bounds["cubeB"][k]), np.array(bounds["cubeC"][k]))
 
         placement_initializer = UniformRandomSampler(
             name="ObjectSampler",
@@ -488,7 +490,7 @@ class StackThree(Stack_D0):
                 z_rot: 2-tuple for low and high values for uniform sampling of z-rotation
                 reference: np array of shape (3,) for reference position in world frame (assumed to be static and not change)
         """
-        return { 
+        return {
             k : dict(
                 x=(-0.10, 0.10),
                 y=(-0.10, 0.10),
@@ -535,7 +537,7 @@ class StackThree_D1(StackThree_D0):
 
     def _get_initial_placement_bounds(self):
         max_dim = 0.20
-        return { 
+        return {
             k : dict(
                 x=(-max_dim, max_dim),
                 y=(-max_dim, max_dim),

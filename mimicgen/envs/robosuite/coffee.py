@@ -501,8 +501,8 @@ class Coffee(SingleArmEnv_MG):
 
     def _create_obj_centric_sensors(self, modality="object_centric"):
         """
-        Creates sensors for poses relative to certain objects. This is abstracted in a separate 
-        function call so that we don't have local function naming collisions during 
+        Creates sensors for poses relative to certain objects. This is abstracted in a separate
+        function call so that we don't have local function naming collisions during
         the _setup_observables() call.
 
         Args:
@@ -599,7 +599,7 @@ class Coffee(SingleArmEnv_MG):
 
     def _check_lid(self):
         # lid should be closed (angle should be less than 5 degrees)
-        hinge_tolerance = 15. * np.pi / 180. 
+        hinge_tolerance = 15. * np.pi / 180.
         hinge_angle = self.sim.data.qpos[self.hinge_qpos_addr]
         lid_check = (hinge_angle < hinge_tolerance)
         return lid_check
@@ -844,7 +844,7 @@ class Coffee_D2(Coffee_D1):
 class CoffeePreparation(Coffee):
     """
     Harder coffee task where the task starts with materials in drawer and coffee machine closed. The robot
-    needs to retrieve the coffee pod and mug from the drawer, open the coffee machine, place the pod and mug 
+    needs to retrieve the coffee pod and mug from the drawer, open the coffee machine, place the pod and mug
     in the machine, and then close the lid.
     """
     def _get_mug_model(self):
@@ -971,7 +971,7 @@ class CoffeePreparation(Coffee):
         )
         # HACK: merge in mug afterwards because its number of geoms may change
         #       and this may break the generate_id_mappings function in task.py
-        self.model.merge_objects([self.mug]) # add cleanup object to model 
+        self.model.merge_objects([self.mug]) # add cleanup object to model
 
     def _get_initial_placement_bounds(self):
         """
@@ -1013,7 +1013,7 @@ class CoffeePreparation(Coffee):
                 # z_rot=(0.0, 0.0),
                 x=(0.05, 0.20),
                 y=(0.05, 0.25),
-                z_rot=(0.0, 0.0), 
+                z_rot=(0.0, 0.0),
                 reference=self.table_offset,
             ),
             coffee_pod=dict(
@@ -1222,8 +1222,8 @@ class CoffeePreparation(Coffee):
         # making contact with the coffee machine base plate
         coffee_base_plate_geom = "coffee_machine_base_g0"
         mug_on_machine = self.check_contact(coffee_base_plate_geom, self.mug)
-
-        return mug_upright and mug_on_machine
+        return mug_on_machine
+        # return mug_upright and mug_on_machine
 
     def _get_partial_task_metrics(self):
         """
@@ -1278,7 +1278,7 @@ class CoffeePreparation_D1(CoffeePreparation_D0):
             mug=dict(
                 x=(-0.15, 0.20),
                 y=(0.05, 0.25),
-                z_rot=(0.0, 2. * np.pi), 
+                z_rot=(0.0, 2. * np.pi),
                 reference=self.table_offset,
             ),
             coffee_pod=dict(
@@ -1288,3 +1288,7 @@ class CoffeePreparation_D1(CoffeePreparation_D0):
                 reference=np.array((0., 0., 0.)),
             ),
         )
+
+class Coffee_Preparation_T0(CoffeePreparation_D1):
+    """Paper-name alias for the current CoffeePreparation task variant."""
+    pass

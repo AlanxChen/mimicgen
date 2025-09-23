@@ -109,12 +109,12 @@ def generate_dataset(
 
         render (bool): if True, render each data generation attempt on-screen
 
-        video_path (str or None): if provided, render the data generation attempts to the 
+        video_path (str or None): if provided, render the data generation attempts to the
             provided video path
 
         video_skip (int): skip every nth frame when writing video
 
-        render_image_names (list of str or None): if provided, specify camera names to 
+        render_image_names (list of str or None): if provided, specify camera names to
             use during on-screen / off-screen rendering to override defaults
 
         pause_subtask (bool): if True, pause after every subtask during generation, for
@@ -224,8 +224,8 @@ def generate_dataset(
 
     # env args: don't use image obs when writing debug video
     use_image_obs = ((mg_config.obs.collect_obs and (len(mg_config.obs.camera_names) > 0)) if not write_video else False)
-    use_depth_obs = False
-    
+    use_depth_obs = True
+
     # simulation environment
     env = RobomimicUtils.create_env(
         env_meta=env_meta,
@@ -237,7 +237,7 @@ def generate_dataset(
         camera_names=camera_names,
         camera_height=mg_config.obs.camera_height,
         camera_width=mg_config.obs.camera_width,
-        render=render, 
+        render=render,
         render_offscreen=write_video,
         use_image_obs=use_image_obs,
         use_depth_obs=use_depth_obs,
@@ -357,7 +357,7 @@ def generate_dataset(
             # check if this failure should be kept
             if mg_config.experiment.generation.keep_failed and \
                 ((mg_config.experiment.max_num_failures is None) or (num_failures <= mg_config.experiment.max_num_failures)):
-                
+
                 # save failed trajectory in separate folder
                 MG_FileUtils.write_demo_to_hdf5(
                     folder=tmp_dataset_failed_folder_path,

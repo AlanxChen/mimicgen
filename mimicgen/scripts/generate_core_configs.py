@@ -3,7 +3,7 @@
 # Licensed under the NVIDIA Source Code License [see LICENSE for details].
 
 """
-We utilize robomimic's config generator class to easily generate data generation configs for our 
+We utilize robomimic's config generator class to easily generate data generation configs for our
 core set of tasks in the paper. It can be modified easily to generate other configs.
 
 The global variables at the top of the file should be configured manually.
@@ -29,10 +29,10 @@ SRC_DATA_DIR = os.path.join(mimicgen.__path__[0], "../datasets/source")
 CONFIG_DIR = "/tmp/core_configs"
 
 # set base folder for newly generated datasets
-OUTPUT_FOLDER = "/tmp/core_datasets"
+OUTPUT_FOLDER = "/home/baiye/work/3D-Diffusion-Policy/3D-Diffusion-Policy/data"
 
 # number of trajectories to generate (or attempt to generate)
-NUM_TRAJ = 1000
+NUM_TRAJ = 1
 
 # whether to guarantee that many successful trajectories (e.g. keep running until that many successes, or stop at that many attempts)
 GUARANTEE = True
@@ -64,7 +64,7 @@ BASE_CONFIGS = [
 
 def make_generators(base_configs):
     """
-    An easy way to make multiple config generators by using different 
+    An easy way to make multiple config generators by using different
     settings for each.
     """
     all_settings = [
@@ -152,8 +152,8 @@ def make_generators(base_configs):
             dataset_name="coffee_preparation",
             generation_path="{}/coffee_preparation".format(OUTPUT_FOLDER),
             # task_interface="MG_CoffeePreparation",
-            tasks=["CoffeePreparation_D0", "CoffeePreparation_D1"],
-            task_names=["D0", "D1"],
+            tasks=["CoffeePreparation_D0", "CoffeePreparation_D1", "Coffee_Preparation_T0"],
+            task_names=["D0", "D1", "T0"],
             select_src_per_subtask=False,
             selection_strategy="random",
             selection_strategy_kwargs=None,
@@ -192,8 +192,8 @@ def make_generators(base_configs):
             dataset_name="hammer_cleanup",
             generation_path="{}/hammer_cleanup".format(OUTPUT_FOLDER),
             # task_interface="MG_HammerCleanup",
-            tasks=["HammerCleanup_D0", "HammerCleanup_D1"],
-            task_names=["D0", "D1"],
+            tasks=["HammerCleanup_D0", "HammerCleanup_D1", "Hammer_Cleanup_T0"],
+            task_names=["D0", "D1", "T0"],
             select_src_per_subtask=False,
             selection_strategy="random",
             selection_strategy_kwargs=None,
@@ -205,8 +205,8 @@ def make_generators(base_configs):
             dataset_name="mug_cleanup",
             generation_path="{}/mug_cleanup".format(OUTPUT_FOLDER),
             # task_interface="MG_MugCleanup",
-            tasks=["MugCleanup_D0", "MugCleanup_D1", "MugCleanup_O1", "MugCleanup_O2"],
-            task_names=["D0", "D1", "O1", "O2"],
+            tasks=["MugCleanup_D0", "MugCleanup_D1", "MugCleanup_O1", "MugCleanup_O2", "Mug_Cleanup_T0"],
+            task_names=["D0", "D1", "O1", "O2", "T0"],
             select_src_per_subtask=False,
             selection_strategy="random",
             selection_strategy_kwargs=None,
@@ -218,8 +218,8 @@ def make_generators(base_configs):
             dataset_name="kitchen",
             generation_path="{}/kitchen".format(OUTPUT_FOLDER),
             # task_interface="MG_Kitchen",
-            tasks=["Kitchen_D0", "Kitchen_D1"],
-            task_names=["D0", "D1"],
+            tasks=["Kitchen_D0", "Kitchen_D1", "Kitchen_T0"],
+            task_names=["D0", "D1", "T0"],
             select_src_per_subtask=False,
             selection_strategy="random",
             selection_strategy_kwargs=None,
@@ -236,9 +236,9 @@ def make_generators(base_configs):
 
 def make_generator(config_file, settings):
     """
-    Implement this function to setup your own hyperparameter scan. 
-    Each config generator is created using a base config file (@config_file) 
-    and a @settings dictionary that can be used to modify which parameters 
+    Implement this function to setup your own hyperparameter scan.
+    Each config generator is created using a base config file (@config_file)
+    and a @settings dictionary that can be used to modify which parameters
     are set.
     """
     generator = ConfigGenerator(
@@ -305,15 +305,15 @@ def make_generator(config_file, settings):
     if settings.get("robots", None) is not None:
         generator.add_param(
             key="experiment.task.robot",
-            name="r", 
-            group=2, 
+            name="r",
+            group=2,
             values=settings["robots"],
         )
     if settings.get("grippers", None) is not None:
         generator.add_param(
             key="experiment.task.gripper",
-            name="g", 
-            group=2, 
+            name="g",
+            group=2,
             values=settings["grippers"],
         )
 
